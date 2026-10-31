@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maths & Times Tables Arena</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@700;800;900&display=swap');
+    
+    body {
+      font-family: 'Fredoka', cursive, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+      min-height: 100vh;
+      color: #f8fafc;
+      user-select: none;
+    }
+
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-arcade {
+      transition: all 0.15s ease;
+      box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+    }
+    .btn-arcade:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+    }
+
+    .floating-text {
+      animation: floatUp 1s ease-out forwards;
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      50% { transform: translateY(-30px) scale(1.2); }
+      100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+    }
+
+    .shake {
+      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+      40%, 60% { transform: translate3d(6px, 0, 0); }
+    }
+
+    .pulse-glow {
+      animation: pulseGlow 2s infinite alternate;
+    }
+
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 15px rgba(236, 72, 153, 0.4); }
+      100% { box-shadow: 0 0 35px rgba(236, 72, 153, 0.9); }
+    }
+
+    .bubble {
+      animation: floatBubble 6s infinite ease-in-out alternate;
+    }
+
+    @keyframes floatBubble {
+      0% { transform: translateY(0px) rotate(0deg); }
+      100% { transform: translateY(-20px) rotate(10deg); }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #6366f1;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-100 overflow-x-hidden">
+
+  <!-- TOP HEADER / NAV BAR -->
+  <header class="glass-panel sticky top-0 z-40 px-4 py-3 border-b border-slate-700/50">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('dashboard')">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-pink-500 flex items-center justify-center text-2xl shadow-lg shadow-pink-500/30">
+          <i class="fa-solid font-black text-slate-950">×</i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-pink-400 to-indigo-300 leading-tight">
+            MATH ARENA
+          </h1>
+          <p class="text-xs text-slate-400 font-semibold tracking-wide">TIMES TABLE CHAMPIONS</p>
+        </div>
+      </div>
+
+      <!-- Stats Header Bar -->
+      <div class="flex items-center gap-3 md:gap-6 bg-slate-900/80 px-4 py-2 rounded-2xl border border-slate-700/60">
+        <!-- XP & Level -->
+        <div class="flex items-center space-x-2">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-bold">LEVEL <span id="user-level" class="text-amber-400">1</span></div>
+            <div class="text-sm font-extrabold text-amber-300"><span id="user-xp">0</span> XP</div>
+          </div>
+        </div>
+
+        <div class="h-8 w-px bg-slate-700"></div>
+
+        <!-- Streak -->
+        <div class="flex items-center space-x-2">
+          <div class="w-9 h-9 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-fire"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-bold">STREAK</div>
+            <div class="text-sm font-extrabold text-orange-400"><span id="user-streak">0</span> 🔥</div>
+          </div>
+        </div>
+
+        <div class="h-8 w-px bg-slate-700"></div>
+
+        <!-- Audio Toggle Button -->
+        <button id="sound-btn" onclick="toggleSound()" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 flex items-center justify-center text-emerald-400 transition">
+          <i class="fa-solid fa-volume-high text-lg" id="sound-icon"></i>
+        </button>
+      </div>
+
+      <!-- Main Navigation Buttons -->
+      <nav class="flex items-center space-x-2">
+        <button onclick="switchTab('dashboard')" class="nav-btn px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 flex items-center gap-2 transition">
+          <i class="fa-solid fa-compass text-indigo-400"></i> Main Hub
+        </button>
+        <button onclick="switchTab('grid')" class="nav-btn px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 flex items-center gap-2 transition">
+          <i class="fa-solid fa-table-cells text-pink-400"></i> Table Grid
+        </button>
+      </nav>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
+
+    <!-- ================= VIEW 1: DASHBOARD / HUB ================= -->
+    <section id="view-dashboard" class="space-y-6">
+      
+      <!-- Welcome Hero Box -->
+      <div class="glass-panel p-6 md:p-8 rounded-3xl relative overflow-hidden border border-indigo-500/30">
+        <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 max-w-2xl space-y-3">
+          <span class="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-xs font-bold uppercase tracking-wider border border-indigo-500/30">
+            Welcome Arena Challenger!
+          </span>
+          <h2 class="text-3xl md:text-5xl font-extrabold text-white leading-tight">
+            Master Times Tables & Beat the AI Bots!
+          </h2>
+          <p class="text-slate-300 text-base md:text-lg">
+            Select your target tables below, configure difficulty, and launch into action-packed game modes!
+          </p>
+        </div>
+
+        <!-- Times Table Selector Matrix -->
+        <div class="mt-6 pt-6 border-t border-slate-700/60">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-bold text-amber-300 flex items-center gap-2">
+              <i class="fa-solid fa-sliders"></i> Choose Multiplication Tables to Practice:
+            </h3>
+            <div class="space-x-2">
+              <button onclick="selectAllTables(true)" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-indigo-300">Select All</button>
+              <button onclick="selectAllTables(false)" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400">Clear</button>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-2" id="table-selection-grid">
+            <!-- JS inserts buttons 1 to 12 -->
+          </div>
+        </div>
+
+        <!-- Speed & Difficulty Options -->
+        <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Timer Speed / Difficulty</label>
+            <select id="setting-difficulty" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-xl px-4 py-2.5 font-bold focus:outline-none focus:border-indigo-500">
+              <option value="easy">Easy (12 Seconds / Slow Bot)</option>
+              <option value="medium" selected>Medium (8 Seconds / Regular Bot)</option>
+              <option value="hard">Hard (5 Seconds / Fast Bot)</option>
+              <option value="master">Master (3 Seconds / Lightning Bot)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Input Mode</label>
+            <select id="setting-input-mode" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-xl px-4 py-2.5 font-bold focus:outline-none focus:border-indigo-500">
+              <option value="keypad">On-Screen Keypad / Numpad</option>
+              <option value="mcq">Multiple Choice Options</option>
+            </select>
+          </div>
+
+          <div class="flex items-end">
+            <div class="w-full bg-slate-900/60 rounded-xl p-2.5 border border-slate-800 text-center">
+              <span class="text-xs text-slate-400 block font-bold">Active Selected Tables</span>
+              <span id="selected-tables-summary" class="text-sm font-extrabold text-amber-400">1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- GAME MODES SELECTION GRID -->
+      <h3 class="text-2xl font-extrabold text-slate-100 pt-2 flex items-center gap-3">
+        <i class="fa-solid fa-gamepad text-pink-500"></i> Select Game Mode
+      </h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <!-- Mode A: Speed Run -->
+        <div onclick="launchGame('speedrun')" class="glass-panel p-6 rounded-3xl cursor-pointer group hover:scale-[1.02] transition duration-300 border border-cyan-500/30 hover:border-cyan-400 flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute -right-8 -top-8 w-28 h-28 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20"></div>
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-3xl mb-4 group-hover:rotate-12 transition">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">Arcade Solo</span>
+            <h4 class="text-2xl font-extrabold text-white mt-1 mb-2">Speed Run</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Answer flashcards rapidly before time expires. Score streak multipliers and gain extra time power-ups!
+            </p>
+          </div>
+          <button class="btn-arcade mt-6 w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-extrabold text-white text-sm tracking-wide">
+            PLAY SPEED RUN
+          </button>
+        </div>
+
+        <!-- Mode B: VS Offline Bot -->
+        <div onclick="launchGame('botvs')" class="glass-panel p-6 rounded-3xl cursor-pointer group hover:scale-[1.02] transition duration-300 border border-emerald-500/30 hover:border-emerald-400 flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute -right-8 -top-8 w-28 h-28 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20"></div>
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl mb-4 group-hover:rotate-12 transition">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">AI Challenge</span>
+            <h4 class="text-2xl font-extrabold text-white mt-1 mb-2">VS Bot Battle</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Race live head-to-head against smart AI opponents like Byte, Speedy Sam, & Brainiac!
+            </p>
+          </div>
+          <button class="btn-arcade mt-6 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl font-extrabold text-white text-sm tracking-wide">
+            CHALLENGE BOT
+          </button>
+        </div>
+
+        <!-- Mode C: Bubble Pop -->
+        <div onclick="launchGame('bubblepop')" class="glass-panel p-6 rounded-3xl cursor-pointer group hover:scale-[1.02] transition duration-300 border border-purple-500/30 hover:border-purple-400 flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute -right-8 -top-8 w-28 h-28 bg-purple-500/10 rounded-full blur-xl group-hover:bg-purple-500/20"></div>
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-3xl mb-4 group-hover:rotate-12 transition">
+              <i class="fa-solid fa-circle-dot"></i>
+            </div>
+            <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Action Pop</span>
+            <h4 class="text-2xl font-extrabold text-white mt-1 mb-2">Bubble Pop</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Floating number bubbles rise! Click/tap the correct bubble matching the Target Product!
+            </p>
+          </div>
+          <button class="btn-arcade mt-6 w-full py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl font-extrabold text-white text-sm tracking-wide">
+            POP BUBBLES
+          </button>
+        </div>
+
+        <!-- Mode D: Monster Boss Battle -->
+        <div onclick="launchGame('bossbattle')" class="glass-panel p-6 rounded-3xl cursor-pointer group hover:scale-[1.02] transition duration-300 border border-rose-500/30 hover:border-rose-400 flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute -right-8 -top-8 w-28 h-28 bg-rose-500/10 rounded-full blur-xl group-hover:bg-rose-500/20"></div>
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-3xl mb-4 group-hover:rotate-12 transition">
+              <i class="fa-solid fa-dragon"></i>
+            </div>
+            <span class="text-xs font-bold uppercase tracking-wider text-rose-400">Boss Arena</span>
+            <h4 class="text-2xl font-extrabold text-white mt-1 mb-2">Boss Attack</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Defeat the Math Monster Boss! Solve math questions to strike attacks before the monster strikes back!
+            </p>
+          </div>
+          <button class="btn-arcade mt-6 w-full py-3 bg-gradient-to-r from-rose-500 to-red-600 rounded-xl font-extrabold text-white text-sm tracking-wide">
+            FIGHT BOSS
+          </button>
+        </div>
+
+      </div>
+
+      <!-- BADGES & UNLOCKS SECTION -->
+      <div class="glass-panel p-6 rounded-3xl border border-slate-700">
+        <h3 class="text-xl font-extrabold text-amber-300 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-award"></i> Trophies & Achievements
+        </h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3" id="badges-container">
+          <!-- JS dynamic renders badges -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= VIEW 2: MULTIPLICATION GRID ================= -->
+    <section id="view-grid" class="hidden space-y-6">
+      <div class="glass-panel p-6 rounded-3xl">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-2xl font-extrabold text-white">Interactive Multiplication Chart</h2>
+            <p class="text-xs text-slate-400">Hover or click any cell to review products and practice weak spots.</p>
+          </div>
+          <button onclick="switchTab('dashboard')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700">
+            <i class="fa-solid fa-arrow-left"></i> Back to Hub
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-center text-sm border-collapse" id="times-table-grid">
+            <!-- Dynamic Grid Generated by JS -->
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 3: GAME PLAY ARENA CONTAINER ================= -->
+    <section id="view-gameplay" class="hidden relative">
+
+      <!-- Top Active Game Control Bar -->
+      <div class="flex items-center justify-between bg-slate-900/90 px-6 py-3 rounded-2xl border border-slate-700 mb-6">
+        <button onclick="exitGame()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 flex items-center gap-2">
+          <i class="fa-solid fa-door-open"></i> Exit Game
+        </button>
+        <div id="game-title-display" class="font-extrabold text-base text-amber-400 uppercase tracking-wide">
+          MODE ACTIVE
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-400 font-bold">SCORE: <span id="game-score" class="text-amber-300 text-base">0</span></span>
+        </div>
+      </div>
+
+      <!-- CONTAINER: MODE A - SPEED RUN -->
+      <div id="game-mode-speedrun" class="game-sub-view hidden flex flex-col items-center">
+        <div class="glass-panel p-6 md:p-10 rounded-3xl w-full max-w-xl text-center space-y-6 relative overflow-hidden">
+          
+          <!-- Timer Bar -->
+          <div class="w-full bg-slate-800 h-4 rounded-full overflow-hidden border border-slate-700">
+            <div id="speedrun-timer-bar" class="bg-gradient-to-r from-cyan-400 to-indigo-500 h-full w-full transition-all duration-100"></div>
+          </div>
+
+          <!-- Streak Multiplier Floating Tag -->
+          <div class="flex justify-between items-center text-xs font-bold text-slate-400">
+            <span>QUESTION <span id="sr-q-count" class="text-white">1</span></span>
+            <span id="sr-combo-tag" class="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black rounded-full">
+              COMBO x1
+            </span>
+          </div>
+
+          <!-- Flashcard Equation -->
+          <div class="py-6 bg-slate-900/80 rounded-3xl border border-slate-700/80 relative">
+            <div id="sr-equation" class="text-5xl md:text-7xl font-black text-white tracking-wider">
+              7 × 8
+            </div>
+            <div id="feedback-floating" class="absolute inset-0 flex items-center justify-center pointer-events-none"></div>
+          </div>
+
+          <!-- Answer Input Area -->
+          <div id="sr-input-area" class="w-full">
+            <!-- Populated dynamically (Keypad or MCQ) -->
+          </div>
+
+        </div>
+      </div>
+
+      <!-- CONTAINER: MODE B - VS BOT BATTLE -->
+      <div id="game-mode-botvs" class="game-sub-view hidden flex flex-col items-center space-y-6">
+        
+        <!-- Live Track / Health Comparison -->
+        <div class="glass-panel p-6 rounded-3xl w-full max-w-2xl space-y-4">
+          <div class="flex justify-between items-center text-sm font-extrabold">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs"><i class="fa-solid fa-user"></i></span>
+              <span class="text-indigo-300">YOU (Player)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="bot-name" class="text-emerald-300">Byte Bot</span>
+              <span class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-slate-950 text-xs"><i class="fa-solid fa-robot"></i></span>
+            </div>
+          </div>
+
+          <!-- Race Progress Track -->
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-xs text-slate-400 mb-1 font-bold">
+                <span>Player Race Progress</span>
+                <span id="player-progress-pct">0%</span>
+              </div>
+              <div class="w-full bg-slate-900 h-5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                <div id="player-progress-bar" class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-full w-0 rounded-full transition-all duration-300"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs text-slate-400 mb-1 font-bold">
+                <span>Bot Race Progress</span>
+                <span id="bot-progress-pct">0%</span>
+              </div>
+              <div class="w-full bg-slate-900 h-5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                <div id="bot-progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full w-0 rounded-full transition-all duration-300"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bot Equation Flashcard -->
+        <div class="glass-panel p-6 md:p-8 rounded-3xl w-full max-w-xl text-center space-y-6">
+          <div id="bot-equation" class="text-5xl md:text-6xl font-black text-white tracking-wider py-4 bg-slate-900/80 rounded-2xl border border-slate-700">
+            6 × 9
+          </div>
+          <div id="bot-input-area" class="w-full">
+            <!-- Dynamically loaded input -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CONTAINER: MODE C - BUBBLE POP MATH -->
+      <div id="game-mode-bubblepop" class="game-sub-view hidden flex flex-col items-center">
+        <div class="glass-panel p-6 rounded-3xl w-full max-w-3xl flex flex-col items-center">
+          
+          <div class="text-center mb-4">
+            <span class="text-xs font-bold text-purple-300 tracking-widest uppercase">Target Equation</span>
+            <div id="bubble-target-eq" class="text-4xl md:text-5xl font-black text-amber-300 mt-1">
+              8 × 4 = ?
+            </div>
+          </div>
+
+          <!-- Bubble Play Field Canvas Container -->
+          <div id="bubble-field" class="w-full h-80 sm:h-96 bg-slate-950/80 rounded-2xl relative overflow-hidden border border-slate-800 flex items-center justify-center">
+            <!-- Dynamic floating bubbles inserted by JS -->
+          </div>
+
+        </div>
+      </div>
+
+      <!-- CONTAINER: MODE D - MONSTER BOSS BATTLE -->
+      <div id="game-mode-bossbattle" class="game-sub-view hidden flex flex-col items-center space-y-4">
+        <div class="glass-panel p-6 rounded-3xl w-full max-w-2xl space-y-4 text-center relative overflow-hidden">
+          
+          <!-- Boss Visual & Health -->
+          <div class="flex flex-col items-center space-y-2">
+            <div id="boss-avatar" class="text-7xl md:text-8xl pulse-glow p-4 rounded-full bg-rose-500/10 transition transform">
+              👾
+            </div>
+            <h4 id="boss-name" class="text-2xl font-extrabold text-rose-400">MATH GORGON</h4>
+            
+            <!-- Boss HP Bar -->
+            <div class="w-full bg-slate-900 h-6 rounded-full overflow-hidden border border-rose-500/40 p-0.5">
+              <div id="boss-hp-bar" class="bg-gradient-to-r from-rose-600 to-red-500 h-full w-full rounded-full transition-all duration-300"></div>
+            </div>
+            <div class="text-xs font-bold text-slate-400">BOSS HP: <span id="boss-hp-text" class="text-rose-400">100/100</span></div>
+          </div>
+
+          <!-- Equation Box -->
+          <div id="boss-equation" class="text-4xl md:text-6xl font-black text-white bg-slate-900/80 py-4 rounded-2xl border border-slate-700">
+            9 × 7
+          </div>
+
+          <!-- Input Area -->
+          <div id="boss-input-area" class="w-full">
+            <!-- Dynamically loaded keypad / mcq -->
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= MODAL: GAME OVER / RESULT SUMMARY ================= -->
+    <div id="modal-result" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+      <div class="glass-panel p-8 rounded-3xl max-w-md w-full text-center space-y-6 border border-indigo-500/40 animate-bounce-in">
+        
+        <div id="result-icon" class="w-20 h-20 mx-auto rounded-3xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-4xl">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+
+        <div>
+          <h3 id="result-title" class="text-3xl font-extrabold text-white">Round Completed!</h3>
+          <p id="result-subtitle" class="text-sm text-slate-300 mt-1">Awesome effort in the arena!</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 bg-slate-900/80 p-4 rounded-2xl border border-slate-700/80">
+          <div>
+            <div class="text-xs text-slate-400 font-bold">TOTAL SCORE</div>
+            <div id="res-score" class="text-2xl font-black text-amber-400">0</div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-bold">XP EARNED</div>
+            <div id="res-xp" class="text-2xl font-black text-indigo-400">+0 XP</div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-bold">ACCURACY</div>
+            <div id="res-acc" class="text-2xl font-black text-emerald-400">100%</div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-bold">BEST STREAK</div>
+            <div id="res-streak" class="text-2xl font-black text-orange-400">0 🔥</div>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <button onclick="closeResultModal(); launchGame(currentGameMode);" class="btn-arcade flex-1 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl font-extrabold text-white text-sm">
+            PLAY AGAIN
+          </button>
+          <button onclick="closeResultModal(); switchTab('dashboard');" class="btn-arcade flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-extrabold text-sm border border-slate-700">
+            MAIN HUB
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="text-center py-4 text-xs text-slate-500 border-t border-slate-800/80">
+    Maths & Times Tables Arena &copy; 2026 • Interactive Learning Platform
+  </footer>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    /* ==========================================================================
+       AUDIO SYNTHESIZER (Web Audio API - No external assets)
+       ========================================================================== */
+    class SoundEffects {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      }
+
+      playTone(freq, type, duration, startVol = 0.2) {
+        if (this.muted) return;
+        this.init();
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(startVol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      }
+
+      correct() {
+        this.playTone(523.25, 'triangle', 0.1, 0.2); // C5
+        setTimeout(() => this.playTone(659.25, 'triangle', 0.15, 0.25), 80); // E5
+        setTimeout(() => this.playTone(783.99, 'triangle', 0.25, 0.3), 160); // G5
+      }
+
+      wrong() {
+        this.playTone(180, 'sawtooth', 0.2, 0.3);
+        setTimeout(() => this.playTone(130, 'sawtooth', 0.25, 0.3), 120);
+      }
+
+      pop() {
+        this.playTone(400, 'sine', 0.08, 0.2);
+      }
+
+      victory() {
+        const notes = [440, 554.37, 659.25, 880];
+        notes.forEach((n, idx) => {
+          setTimeout(() => this.playTone(n, 'sine', 0.25, 0.3), idx * 100);
+        });
+      }
+    }
+
+    const sound = new SoundEffects();
+    function toggleSound() {
+      sound.muted = !sound.muted;
+      const icon = document.getElementById('sound-icon');
+      const btn = document.getElementById('sound-btn');
+      if (sound.muted) {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+        btn.classList.replace('text-emerald-400', 'text-slate-500');
+      } else {
+        icon.className = 'fa-solid fa-volume-high text-emerald-400';
+        btn.classList.replace('text-slate-500', 'text-emerald-400');
+        sound.pop();
+      }
+    }
+
+    /* ==========================================================================
+       GLOBAL STATE & STORAGE
+       ========================================================================== */
+    const state = {
+      xp: parseInt(localStorage.getItem('math_arena_xp') || '0'),
+      level: 1,
+      streak: 0,
+      bestStreak: 0,
+      selectedTables: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      unlockedBadges: JSON.parse(localStorage.getItem('math_arena_badges') || '[]'),
+      inputBuffer: ''
+    };
+
+    const BADGES = [
+      { id: 'first_win', name: 'First Victory', icon: 'fa-trophy', desc: 'Complete 1 game mode' },
+      { id: 'streak_5', name: 'Hot Streak', icon: 'fa-fire', desc: 'Reach a 5 streak' },
+      { id: 'streak_15', name: 'Unstoppable', icon: 'fa-bolt', desc: 'Reach a 15 streak' },
+      { id: 'bot_slayer', name: 'Bot Buster', icon: 'fa-robot', desc: 'Defeat an AI Bot' },
+      { id: 'boss_slayer', name: 'Boss Champion', icon: 'fa-dragon', desc: 'Defeat the Math Boss' },
+      { id: 'table_master', name: 'Math Scholar', icon: 'fa-graduation-cap', desc: 'Earn 1000 Total XP' }
+    ];
+
+    function calculateLevel() {
+      state.level = Math.floor(state.xp / 250) + 1;
+      document.getElementById('user-level').innerText = state.level;
+      document.getElementById('user-xp').innerText = state.xp;
+      document.getElementById('user-streak').innerText = state.streak;
+    }
+
+    function addXP(amount) {
+      state.xp += amount;
+      localStorage.setItem('math_arena_xp', state.xp.toString());
+      calculateLevel();
+      checkBadges();
+    }
+
+    function checkBadges() {
+      if (state.xp >= 1000) unlockBadge('table_master');
+      renderBadges();
+    }
+
+    function unlockBadge(badgeId) {
+      if (!state.unlockedBadges.includes(badgeId)) {
+        state.unlockedBadges.push(badgeId);
+        localStorage.setItem('math_arena_badges', JSON.stringify(state.unlockedBadges));
+        sound.victory();
+      }
+    }
+
+    /* ==========================================================================
+       UI CONTROLLERS & NAVIGATION
+       ========================================================================== */
+    function switchTab(tabId) {
+      sound.init();
+      sound.pop();
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-grid').classList.add('hidden');
+      document.getElementById('view-gameplay').classList.add('hidden');
+
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+      if (tabId === 'grid') renderTimesTableGrid();
+    }
+
+    function renderTableSelection() {
+      const container = document.getElementById('table-selection-grid');
+      container.innerHTML = '';
+      for (let i = 1; i <= 12; i++) {
+        const active = state.selectedTables.includes(i);
+        const btn = document.createElement('button');
+        btn.className = `py-2 rounded-xl font-extrabold text-sm border transition ${
+          active 
+            ? 'bg-gradient-to-tr from-indigo-600 to-pink-500 border-pink-400 text-white shadow-md' 
+            : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800'
+        }`;
+        btn.innerText = `${i}×`;
+        btn.onclick = () => toggleTableSelection(i);
+        container.appendChild(btn);
+      }
+      document.getElementById('selected-tables-summary').innerText = 
+        state.selectedTables.length === 12 ? 'All Tables (1-12)' : state.selectedTables.sort((a,b)=>a-b).join(', ') || 'None';
+    }
+
+    function toggleTableSelection(num) {
+      sound.pop();
+      if (state.selectedTables.includes(num)) {
+        if (state.selectedTables.length > 1) {
+          state.selectedTables = state.selectedTables.filter(n => n !== num);
+        }
+      } else {
+        state.selectedTables.push(num);
+      }
+      renderTableSelection();
+    }
+
+    function selectAllTables(enable) {
+      sound.pop();
+      state.selectedTables = enable ? [1,2,3,4,5,6,7,8,9,10,11,12] : [1];
+      renderTableSelection();
+    }
+
+    function renderBadges() {
+      const container = document.getElementById('badges-container');
+      container.innerHTML = '';
+      BADGES.forEach(b => {
+        const unlocked = state.unlockedBadges.includes(b.id);
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-2xl border text-center flex flex-col items-center justify-center space-y-1 ${
+          unlocked 
+            ? 'bg-amber-500/10 border-amber-500/40 text-amber-300' 
+            : 'bg-slate-900/40 border-slate-800 text-slate-600 opacity-60'
+        }`;
+        card.innerHTML = `
+          <div class="text-2xl"><i class="fa-solid ${b.icon}"></i></div>
+          <div class="text-xs font-bold leading-tight">${b.name}</div>
+          <div class="text-[10px] opacity-80 leading-tight">${b.desc}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    /* ==========================================================================
+       MULTIPLICATION GRID LOGIC
+       ========================================================================== */
+    function renderTimesTableGrid() {
+      const grid = document.getElementById('times-table-grid');
+      let html = '<thead><tr><th class="p-2 bg-slate-900 text-amber-400 font-extrabold border border-slate-800">×</th>';
+      for (let c = 1; c <= 12; c++) {
+        html += `<th class="p-2 bg-slate-900 text-amber-300 font-extrabold border border-slate-800">${c}</th>`;
+      }
+      html += '</tr></thead><tbody>';
+
+      for (let r = 1; r <= 12; r++) {
+        html += `<tr><th class="p-2 bg-slate-900 text-amber-300 font-extrabold border border-slate-800">${r}</th>`;
+        for (let c = 1; c <= 12; c++) {
+          const prod = r * c;
+          html += `<td onclick="sound.pop()" class="p-2 border border-slate-800/80 bg-slate-900/50 hover:bg-indigo-600 hover:text-white font-bold cursor-pointer transition text-slate-300">${prod}</td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody>';
+      grid.innerHTML = html;
+    }
+
+    /* ==========================================================================
+       CORE GAME MECHANICS ENGINE
+       ========================================================================== */
+    let currentGameMode = null;
+    let currentQuestion = null;
+    let gameTimer = null;
+    let gameScore = 0;
+    let questionsAnswered = 0;
+    let correctAnswersCount = 0;
+    let gameActive = false;
+
+    // Mode B: VS Bot Variables
+    let botTimer = null;
+    let playerProgress = 0;
+    let botProgress = 0;
+
+    // Mode C: Bubble Variables
+    let bubbleInterval = null;
+
+    // Mode D: Boss Variables
+    let bossMaxHP = 100;
+    let bossHP = 100;
+
+    function generateQuestion() {
+      const table = state.selectedTables[Math.floor(Math.random() * state.selectedTables.length)];
+      const multiplier = Math.floor(Math.random() * 12) + 1;
+      const answer = table * multiplier;
+      return { table, multiplier, answer };
+    }
+
+    function launchGame(mode) {
+      sound.init();
+      sound.pop();
+      currentGameMode = mode;
+      gameActive = true;
+      gameScore = 0;
+      questionsAnswered = 0;
+      correctAnswersCount = 0;
+      state.streak = 0;
+      state.inputBuffer = '';
+
+      // Reset DOM Sub-views
+      document.querySelectorAll('.game-sub-view').forEach(el => el.classList.add('hidden'));
+      switchTab('gameplay');
+      document.getElementById(`game-mode-${mode}`).classList.remove('hidden');
+
+      document.getElementById('game-score').innerText = '0';
+      document.getElementById('user-streak').innerText = '0';
+
+      const diff = document.getElementById('setting-difficulty').value;
+
+      if (mode === 'speedrun') {
+        document.getElementById('game-title-display').innerText = 'SPEED RUN ARCADE';
+        nextSpeedRunQuestion();
+      } else if (mode === 'botvs') {
+        document.getElementById('game-title-display').innerText = 'VS AI BOT RACE';
+        setupBotBattle(diff);
+      } else if (mode === 'bubblepop') {
+        document.getElementById('game-title-display').innerText = 'BUBBLE POP ARENA';
+        setupBubblePop();
+      } else if (mode === 'bossbattle') {
+        document.getElementById('game-title-display').innerText = 'MATH MONSTER BOSS ATTACK';
+        setupBossBattle();
+      }
+    }
+
+    function exitGame() {
+      gameActive = false;
+      clearInterval(gameTimer);
+      clearInterval(botTimer);
+      clearInterval(bubbleInterval);
+      switchTab('dashboard');
+    }
+
+    /* ==========================================================================
+       KEYPAD & INPUT RENDERING
+       ========================================================================== */
+    function renderInputControls(containerId, onSubmitCallback) {
+      const container = document.getElementById(containerId);
+      const mode = document.getElementById('setting-input-mode').value;
+
+      if (mode === 'mcq') {
+        // Generate 4 Options
+        const correct = currentQuestion.answer;
+        const options = new Set([correct]);
+        while (options.size < 4) {
+          const delta = (Math.floor(Math.random() * 5) + 1) * (Math.random() > 0.5 ? 1 : -1);
+          const wrong = Math.max(1, correct + delta);
+          options.add(wrong);
+        }
+        const shuffled = Array.from(options).sort(() => Math.random() - 0.5);
+
+        let html = '<div class="grid grid-cols-2 gap-3 max-w-md mx-auto">';
+        shuffled.forEach(opt => {
+          html += `
+            <button onclick="checkAnswer(${opt})" class="btn-arcade py-4 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-2xl text-2xl font-black text-amber-300">
+              ${opt}
+            </button>
+          `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+
+      } else {
+        // On-Screen Keypad Buffer Input
+        let html = `
+          <div class="max-w-xs mx-auto space-y-3">
+            <div id="keypad-display" class="bg-slate-950 border-2 border-indigo-500/50 rounded-2xl py-2 px-4 text-3xl font-black text-amber-300 min-h-[52px] flex items-center justify-center">
+              ${state.inputBuffer || '<span class="text-slate-600">?</span>'}
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+        `;
+        [1,2,3,4,5,6,7,8,9].forEach(n => {
+          html += `<button onclick="handleKeypadInput('${n}')" class="btn-arcade py-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-xl font-bold text-white border border-slate-700">${n}</button>`;
+        });
+        html += `
+              <button onclick="handleKeypadInput('clear')" class="btn-arcade py-3 bg-rose-900/40 hover:bg-rose-800/40 text-rose-300 rounded-xl text-sm font-bold border border-rose-700/50">CLR</button>
+              <button onclick="handleKeypadInput('0')" class="btn-arcade py-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-xl font-bold text-white border border-slate-700">0</button>
+              <button onclick="submitKeypadAnswer()" class="btn-arcade py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xl font-bold border border-emerald-400">↵</button>
+            </div>
+          </div>
+        `;
+        container.innerHTML = html;
+      }
+    }
+
+    function handleKeypadInput(val) {
+      sound.pop();
+      if (val === 'clear') {
+        state.inputBuffer = '';
+      } else {
+        if (state.inputBuffer.length < 4) {
+          state.inputBuffer += val;
+        }
+      }
+      const disp = document.getElementById('keypad-display');
+      if (disp) disp.innerHTML = state.inputBuffer || '<span class="text-slate-600">?</span>';
+    }
+
+    function submitKeypadAnswer() {
+      if (!state.inputBuffer) return;
+      const ans = parseInt(state.inputBuffer);
+      state.inputBuffer = '';
+      checkAnswer(ans);
+    }
+
+    // Keyboard physical listener support
+    window.addEventListener('keydown', (e) => {
+      if (!gameActive) return;
+      const mode = document.getElementById('setting-input-mode').value;
+      if (mode === 'keypad') {
+        if (e.key >= '0' && e.key <= '9') {
+          handleKeypadInput(e.key);
+        } else if (e.key === 'Backspace' || e.key === 'Escape') {
+          handleKeypadInput('clear');
+        } else if (e.key === 'Enter') {
+          submitKeypadAnswer();
+        }
+      }
+    });
+
+    /* ==========================================================================
+       ANSWER VALIDATION & FEEDBACK
+       ========================================================================== */
+    function checkAnswer(userAns) {
+      if (!gameActive) return;
+
+      questionsAnswered++;
+      const isCorrect = userAns === currentQuestion.answer;
+
+      if (isCorrect) {
+        sound.correct();
+        correctAnswersCount++;
+        state.streak++;
+        if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+
+        const combo = Math.min(4, Math.floor(state.streak / 3) + 1);
+        const addedXP = 10 * combo;
+        gameScore += 100 * combo;
+
+        addXP(addedXP);
+        triggerConfetti(0.3);
+
+        if (state.streak >= 5) unlockBadge('streak_5');
+        if (state.streak >= 15) unlockBadge('streak_15');
+
+      } else {
+        sound.wrong();
+        state.streak = 0;
+        triggerShake();
+      }
+
+      document.getElementById('game-score').innerText = gameScore;
+      document.getElementById('user-streak').innerText = state.streak;
+
+      // Delegate to Game Modes
+      if (currentGameMode === 'speedrun') {
+        nextSpeedRunQuestion();
+      } else if (currentGameMode === 'botvs') {
+        if (isCorrect) playerProgress += 12;
+        document.getElementById('player-progress-bar').style.width = `${Math.min(100, playerProgress)}%`;
+        document.getElementById('player-progress-pct').innerText = `${Math.min(100, playerProgress)}%`;
+
+        if (playerProgress >= 100) {
+          unlockBadge('bot_slayer');
+          finishGame(true, "You outpaced the AI Bot!");
+        } else {
+          nextBotQuestion();
+        }
+      } else if (currentGameMode === 'bossbattle') {
+        if (isCorrect) {
+          bossHP -= 20;
+          document.getElementById('boss-avatar').classList.add('shake');
+          setTimeout(() => document.getElementById('boss-avatar').classList.remove('shake'), 400);
+        }
+        document.getElementById('boss-hp-bar').style.width = `${Math.max(0, bossHP)}%`;
+        document.getElementById('boss-hp-text').innerText = `${Math.max(0, bossHP)}/100`;
+
+        if (bossHP <= 0) {
+          unlockBadge('boss_slayer');
+          finishGame(true, "Math Boss Defeated!");
+        } else {
+          nextBossQuestion();
+        }
+      }
+    }
+
+    function triggerShake() {
+      const el = document.getElementById(`game-mode-${currentGameMode}`);
+      if (el) {
+        el.classList.add('shake');
+        setTimeout(() => el.classList.remove('shake'), 400);
+      }
+    }
+
+    function triggerConfetti(particleRatio = 0.3) {
+      try {
+        confetti({
+          particleCount: Math.floor(50 * particleRatio),
+          spread: 60,
+          origin: { y: 0.7 }
+        });
+      } catch(e) {}
+    }
+
+    /* ==========================================================================
+       MODE A: SPEED RUN LOGIC
+       ========================================================================== */
+    let speedRunTimeLeft = 100;
+
+    function nextSpeedRunQuestion() {
+      currentQuestion = generateQuestion();
+      document.getElementById('sr-q-count').innerText = questionsAnswered + 1;
+      document.getElementById('sr-equation').innerText = `${currentQuestion.table} × ${currentQuestion.multiplier}`;
+
+      const combo = Math.min(4, Math.floor(state.streak / 3) + 1);
+      document.getElementById('sr-combo-tag').innerText = `COMBO x${combo}`;
+
+      renderInputControls('sr-input-area');
+
+      // Reset / start SpeedRun Timer
+      clearInterval(gameTimer);
+      speedRunTimeLeft = 100;
+      
+      const diff = document.getElementById('setting-difficulty').value;
+      const speedMs = diff === 'master' ? 30 : diff === 'hard' ? 50 : diff === 'easy' ? 120 : 80;
+
+      gameTimer = setInterval(() => {
+        speedRunTimeLeft -= 2;
+        document.getElementById('speedrun-timer-bar').style.width = `${speedRunTimeLeft}%`;
+
+        if (speedRunTimeLeft <= 0) {
+          clearInterval(gameTimer);
+          sound.wrong();
+          state.streak = 0;
+          if (questionsAnswered >= 10) {
+            finishGame(true, "Speed Run Completed!");
+          } else {
+            nextSpeedRunQuestion();
+          }
+        }
+      }, speedMs);
+    }
+
+    /* ==========================================================================
+       MODE B: VS BOT LOGIC
+       ========================================================================== */
+    function setupBotBattle(diff) {
+      playerProgress = 0;
+      botProgress = 0;
+      document.getElementById('player-progress-bar').style.width = '0%';
+      document.getElementById('bot-progress-bar').style.width = '0%';
+      document.getElementById('player-progress-pct').innerText = '0%';
+      document.getElementById('bot-progress-pct').innerText = '0%';
+
+      const bots = {
+        easy: { name: 'Byte the Bot', rate: 2 },
+        medium: { name: 'Speedy Sam', rate: 4 },
+        hard: { name: 'Professor Brainiac', rate: 6 },
+        master: { name: 'Quantum AI', rate: 9 }
+      };
+
+      const selectedBot = bots[diff] || bots.medium;
+      document.getElementById('bot-name').innerText = selectedBot.name;
+
+      nextBotQuestion();
+
+      clearInterval(botTimer);
+      botTimer = setInterval(() => {
+        if (!gameActive) return;
+        botProgress += selectedBot.rate;
+        document.getElementById('bot-progress-bar').style.width = `${Math.min(100, botProgress)}%`;
+        document.getElementById('bot-progress-pct').innerText = `${Math.min(100, botProgress)}%`;
+
+        if (botProgress >= 100) {
+          clearInterval(botTimer);
+          finishGame(false, `${selectedBot.name} won the race!`);
+        }
+      }, 1000);
+    }
+
+    function nextBotQuestion() {
+      currentQuestion = generateQuestion();
+      document.getElementById('bot-equation').innerText = `${currentQuestion.table} × ${currentQuestion.multiplier}`;
+      renderInputControls('bot-input-area');
+    }
+
+    /* ==========================================================================
+       MODE C: BUBBLE POP LOGIC
+       ========================================================================== */
+    function setupBubblePop() {
+      currentQuestion = generateQuestion();
+      document.getElementById('bubble-target-eq').innerText = `${currentQuestion.table} × ${currentQuestion.multiplier} = ?`;
+      spawnBubbles();
+    }
+
+    function spawnBubbles() {
+      const container = document.getElementById('bubble-field');
+      container.innerHTML = '';
+
+      const correct = currentQuestion.answer;
+      const numbers = [correct];
+
+      while (numbers.length < 6) {
+        const wrong = Math.floor(Math.random() * 100) + 1;
+        if (!numbers.includes(wrong)) numbers.push(wrong);
+      }
+      numbers.sort(() => Math.random() - 0.5);
+
+      numbers.forEach((num, i) => {
+        const bubble = document.createElement('button');
+        const colors = ['bg-indigo-500/30 border-indigo-400', 'bg-pink-500/30 border-pink-400', 'bg-emerald-500/30 border-emerald-400', 'bg-amber-500/30 border-amber-400'];
+        const color = colors[i % colors.length];
+        
+        bubble.className = `bubble absolute w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 ${color} backdrop-blur-md flex items-center justify-center text-xl sm:text-2xl font-black text-white shadow-lg cursor-pointer hover:scale-110 transition`;
+        
+        // Random placement
+        bubble.style.left = `${10 + (i * 14)}%`;
+        bubble.style.top = `${20 + (Math.random() * 50)}%`;
+        bubble.innerText = num;
+
+        bubble.onclick = () => {
+          sound.pop();
+          checkAnswer(num);
+          if (gameActive) setupBubblePop();
+        };
+
+        container.appendChild(bubble);
+      });
+    }
+
+    /* ==========================================================================
+       MODE D: BOSS BATTLE LOGIC
+       ========================================================================== */
+    function setupBossBattle() {
+      bossHP = 100;
+      document.getElementById('boss-hp-bar').style.width = '100%';
+      document.getElementById('boss-hp-text').innerText = '100/100';
+      nextBossQuestion();
+    }
+
+    function nextBossQuestion() {
+      currentQuestion = generateQuestion();
+      document.getElementById('boss-equation').innerText = `${currentQuestion.table} × ${currentQuestion.multiplier}`;
+      renderInputControls('boss-input-area');
+    }
+
+    /* ==========================================================================
+       SUMMARY MODAL & GAME OVER
+       ========================================================================== */
+    function finishGame(isVictory, customTitle = "Round Complete!") {
+      gameActive = false;
+      clearInterval(gameTimer);
+      clearInterval(botTimer);
+      clearInterval(bubbleInterval);
+
+      if (isVictory) {
+        sound.victory();
+        triggerConfetti(1.0);
+        unlockBadge('first_win');
+      } else {
+        sound.wrong();
+      }
+
+      const acc = questionsAnswered > 0 ? Math.round((correctAnswersCount / questionsAnswered) * 100) : 100;
+      const earnedXP = gameScore / 10;
+
+      document.getElementById('result-title').innerText = isVictory ? "VICTORY!" : "GAME OVER";
+      document.getElementById('result-subtitle').innerText = customTitle;
+      document.getElementById('res-score').innerText = gameScore;
+      document.getElementById('res-xp').innerText = `+${earnedXP} XP`;
+      document.getElementById('res-acc').innerText = `${acc}%`;
+      document.getElementById('res-streak').innerText = `${state.bestStreak} 🔥`;
+
+      document.getElementById('modal-result').classList.remove('hidden');
+    }
+
+    function closeResultModal() {
+      sound.pop();
+      document.getElementById('modal-result').classList.add('hidden');
+    }
+
+    /* ==========================================================================
+       INITIALIZATION ON LOAD
+       ========================================================================== */
+    window.onload = function() {
+      calculateLevel();
+      renderTableSelection();
+      renderBadges();
+    };
+  </script>
+</body>
+</html>
